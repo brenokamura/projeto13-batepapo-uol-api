@@ -43,9 +43,9 @@ app.post("/participants", async (req, res) => {
 		return;
 	}
 	try{
-		const isParticipant = await dbcollection("participants").findOne({name: participant.name})
+		const isParticipant = await db.collection("participants").findOne({name: participant.name})
 		if(isParticipant){
-			res.send(409);
+			res.sendStatus(409);
 			return;
 		}
 		await db.collection("participants").insertOne({name: participant.name, lastStatus: Date.now()});
@@ -54,7 +54,7 @@ app.post("/participants", async (req, res) => {
 			to: "Todos",
 			text: "entrar na sala...",
 			type: "status",
-			time: Date.now().format("HH:mm:ss")
+			//time: Date.now().format("HH:mm:ss")
 		});
 		res.send(201);
 	}catch(error){

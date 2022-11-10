@@ -17,7 +17,8 @@ mongoClient.connect().then(() => {
 });
 
 const participantsSchema = joi.object({
-	name: joi.string().min(3).required()
+	name: joi.string().min(3).required(),
+	lastStatus: joi.number()
 }
 );
 

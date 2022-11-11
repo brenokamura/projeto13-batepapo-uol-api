@@ -73,4 +73,41 @@ app.get('/participants', async (req, res) => {
     res.sendStatus(500);
   }
 });
+	
+app.post('/messages', async (req, res) => {
+  try {
+    const {to, text, type} = req.body;
+    const {participant} = req.header
+    const validation = messageSchema.validate(message, { abortEarly: false }); 
+    if (validation.error) {
+      res.sendStatus(422);
+      return
+    }
+
+    const isParticipant = await db.collection('participants').findOne({ name: participant});
+    if (isParticipant){
+	res.sendStatus(409);
+	return
+    }
+
+     await db.collection('messages').insertOne({
+     name: participant, 
+     lastStatus: Date.now()	
+});	
+		 		
+    await db.collection('messages').insertOne({
+      from: participant,
+      to,
+      text,
+      type,
+      //time: ,	
+});
+
+    res.sendStatus(201);
+  } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
+  }
+});
+	
 app.listen(5000, () => console.log("Rodando a porta 5000. Sucesso!!!"))

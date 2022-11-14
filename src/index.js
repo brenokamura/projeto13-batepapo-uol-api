@@ -68,8 +68,9 @@ app.get('/participants', async (req, res) => {
     if(!participants){
     res.status(404).send("Não há nenhum participante.");
     return
+	}
+	res.send(participants);
   } catch (err) {
-    console.error(err);
     res.sendStatus(500);
   }
 });

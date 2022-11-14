@@ -109,4 +109,21 @@ app.post('/messages', async (req, res) => {
 	}
 });
 
+
+app.get('/messages', async (req, res) => {
+	try {
+		const { participant } = req.headers;
+		const limit = Number(req.query.limit);
+		const messages = await db.collection('messages').find().toArray();
+	
+		const typeMessage = messages.filter((message) =>{
+			const messageTo = message.to === participant || message.from === participant || message.to === "Todos" 
+			const messagePublic = message.type === "message";
+			return messagePublic || messageTo;
+		})
+		res.send(typeMessage.slice(-limit));
+	} catch (err) {
+		res.sendStatus(500);
+	}
+});
 app.listen(5000, () => console.log("Rodando a porta 5000. Sucesso!!!"))

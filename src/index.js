@@ -115,7 +115,10 @@ app.get('/messages', async (req, res) => {
 		const { participant } = req.headers;
 		const limit = Number(req.query.limit);
 		const messages = await db.collection('messages').find().toArray();
-	
+		if (!participant) {
+			res.status(404).send("Não há nenhum participante.");
+			return
+		}
 		const typeMessage = messages.filter((message) =>{
 			const messageTo = message.to === participant || message.from === participant || message.to === "Todos" 
 			const messagePublic = message.type === "message";
@@ -126,4 +129,23 @@ app.get('/messages', async (req, res) => {
 		res.sendStatus(500);
 	}
 });
+
+
+app.post("/status", async (req, res) => {
+	try {
+	const {participant} = req.headers;	
+		const isParticipant = await db.collection("participants").findOne({ name: participant.name })
+		if (!isParticipant) {
+			res.sendStatus(404);
+			return;
+		}
+		await db.collection("participants").updateOne({ name: participant }, {$set: { lastStatus: Date.now() } });
+		res.sendStatus(200);
+	} catch (error) {
+		res.status(500).send(error.message);
+	}
+});
+
+
+
 app.listen(5000, () => console.log("Rodando a porta 5000. Sucesso!!!"))

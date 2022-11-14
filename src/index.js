@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import joi from 'joi';
 import { MongoClient } from "mongodb";
+import dayjs from 'dayjs';
 
 dotenv.config();
 const app = express();
@@ -42,73 +43,70 @@ app.post("/participants", async (req, res) => {
 		res.status(422).send(errors);
 		return;
 	}
-	try{
-		const isParticipant = await db.collection("participants").findOne({name: participant.name})
-		if(isParticipant){
+	try {
+		const isParticipant = await db.collection("participants").findOne({ name: participant.name })
+		if (isParticipant) {
 			res.sendStatus(409);
 			return;
 		}
-		await db.collection("participants").insertOne({name: participant.name, lastStatus: Date.now()});
+		await db.collection("participants").insertOne({ name: participant.name, lastStatus: Date.now() });
 		await db.collection("message").insertOne({
 			from: participant.name,
 			to: "Todos",
 			text: "entrar na sala...",
 			type: "status",
-			//time: Date.now().format("HH:mm:ss")
+			time: dayjs().format("HH:mm:ss"),	
 		});
 		res.send(201);
-	}catch(error){
+	} catch (error) {
 		res.status(500).send(error.message);
 	}
 })
 
 app.get('/participants', async (req, res) => {
-  try {
-    const participants = await db.collection('participants').find().toArray();
-    if(!participants){
-    res.status(404).send("Não há nenhum participante.");
-    return
+	try {
+		const participants = await db.collection('participants').find().toArray();
+		if (!participants) {
+			res.status(404).send("Não há nenhum participante.");
+			return
+		}
+		res.send(participants);
+	} catch (err) {
+		res.sendStatus(500);
 	}
-	res.send(participants);
-  } catch (err) {
-    res.sendStatus(500);
-  }
 });
-	
+
 app.post('/messages', async (req, res) => {
-  try {
-    const {to, text, type} = req.body;
-    const {participant} = req.header
-    const validation = messageSchema.validate(message, { abortEarly: false }); 
-    if (validation.error) {
-      res.sendStatus(422);
-      return
-    }
+	try {
+	const { to, text, type } = req.body;
+	const { participant } = req.headers;
+		const message = {
+		from: participant,
+		to,
+		text,
+		type,
+		time: dayjs().format("HH:mm:ss")
+	};
+        
+		const validation = messageSchema.validate(message, { abortEarly: false });
+		if (validation.error) {
+			const errors = validation.error.details.map((type) => type.message);
+			res.status(422).send(errors);
+			return;
+		}
 
-    const isParticipant = await db.collection('participants').findOne({ name: participant});
-    if (isParticipant){
-	res.sendStatus(409);
-	return
-    }
+		const isParticipant = await db.collection('participants').findOne({name: participant});
+		if (!isParticipant) {
+			res.sendStatus(409);
+			return
+		}
+		await db.collection('messages').insertOne(message);
 
-     await db.collection('messages').insertOne({
-     name: participant, 
-     lastStatus: Date.now()	
-});	
-		 		
-    await db.collection('messages').insertOne({
-      from: participant,
-      to,
-      text,
-      type,
-      //time: ,	
+		res.sendStatus(201);
+	} catch (err) {
+		console.log(err);
+		res.sendStatus(500);
+	}
 });
 
-    res.sendStatus(201);
-  } catch (err) {
-    console.log(err);
-    res.sendStatus(500);
-  }
-});
-	
 app.listen(5000, () => console.log("Rodando a porta 5000. Sucesso!!!"))
